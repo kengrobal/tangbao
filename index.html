@@ -389,10 +389,13 @@
             }
   });
   let latestFormattedTime = ""; // 定義全域變數
+  let globalStartTime = ""; // 定義全域變數
+  let globalEndTime = ""; // 定義全域變數
+
   document.getElementById("selected-time").addEventListener("change", function() {
     const selectedTime = this.value;
     const formattedTime = latestFormattedTime; // 使用全域變數
-    const endTime = "13:00"; // 下班時間
+    const endTime = globalEndTime; // 使用全域變數
 
     // 將時間字串轉換為 Date 物件
     const selectedDateTime = new Date(`2000-01-01T${selectedTime}`);
@@ -405,7 +408,7 @@
         alert("超過時間範圍，已預訂排定時間，如需該時間，請聯繫店長敲定！");
         this.value = formattedTime; // 將選定時間設定回原本的排定時間
     }
-});
+  });
 
   
 function calculateTotal() {
@@ -459,15 +462,21 @@ function calculateTotal() {
     calculateTotal(); // 重新計算總金額
   } 
   // 獲取上班和下班時間
-  let startTime = "06:30"; // 假設上班時間為 06:30
-  let endTime = "13:30"; // 假設下班時間為 13:30
+  // 將時間序列值轉換為 "HH:MM" 格式的字串
+   // 確保 globalStartTime 和 globalEndTime 是 Date 物件
+   if (globalStartTime instanceof Date && globalEndTime instanceof Date) {
+        // 將時間序列值轉換為 "HH:MM" 格式的字串
+        let startTimeString = globalStartTime.getHours().toString().padStart(2, '0') + ":" + globalStartTime.getMinutes().toString().padStart(2, '0');
+        let endTimeString = globalEndTime.getHours().toString().padStart(2, '0') + ":" + globalEndTime.getMinutes().toString().padStart(2, '0');
 
-  // 計算預定取餐時間
-  let pickupTime = calculatePickupTime(startTime, endTime, pendingOrders, xiaolongbaoQuantity);
-
-  // 將預定取餐時間設定到 selected-time 輸入框
-  latestFormattedTime = pickupTime.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-    document.getElementById("selected-time").value = latestFormattedTime;
+        // 計算預定取餐時間
+        let pickupTime = calculatePickupTime(startTimeString, endTimeString, pendingOrders, xiaolongbaoQuantity);
+       // 將預定取餐時間設定到 selected-time 輸入框
+        latestFormattedTime = pickupTime.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+        document.getElementById("selected-time").value = latestFormattedTime;
+      } else {
+        console.error("globalStartTime 或 globalEndTime 不是 Date 物件");
+    }    
 }
 function updateLastModifiedIndex(input) {
     let inputs = document.querySelectorAll('.order-input.quantity');
@@ -485,7 +494,7 @@ async function getCapacityInfo() {
    document.getElementById("loading-message").style.display = "block";
     document.getElementById("overlay").style.display = "block";
   try {
-    const response = await fetch("https://script.google.com/macros/s/AKfycbxnxO4D4LKqpwYcdLV4efHCBGobdPTR9u0OuA-D8uHmGQZGETLGwoUoZDk93a3VZbfO/exec");
+    const response = await fetch("https://script.google.com/macros/s/AKfycbypYfUfKA6LJI2bS5OUFY6VVixXlecyA6M7OxU4pjyCjBDMlD5JWqXl10NYVntsenFe/exec");
     const data = await response.json();
 
     if (data && data.result === "success" && data.info) {
@@ -495,6 +504,14 @@ async function getCapacityInfo() {
       if (document.getElementById("pending-orders")) {
        document.getElementById("pending-orders").textContent = data.info.pendingOrders;
     }
+      // 獲取上班和下班時間
+      globalStartTime = new Date(data.info.startTime);
+      globalEndTime = new Date(data.info.endTime);
+
+      
+      // 在前端使用時間資料
+      
+
     } else {
       console.error("無法獲取容量資訊：", data ? data.message : "未知錯誤");
     }
@@ -509,18 +526,18 @@ async function getCapacityInfo() {
 
 window.onload = getCapacityInfo;
 // 4. 設定取餐時間限制
-function calculatePickupTime(startTime, endTime, pendingOrders, quantity) {
+function calculatePickupTime(startTimeString, endTimeString, pendingOrders, quantity) {
  // 將 startTime 和 endTime 轉換為 Date 物件
  let start = new Date();
   let end = new Date();
   let now = new Date();
 
   // 解析 startTime
-  let startParts = startTime.split(":");
+  let startParts = startTimeString.split(":");
   start.setHours(parseInt(startParts[0]), parseInt(startParts[1]), 0, 0);
 
   // 解析 endTime
-  let endParts = endTime.split(":");
+  let endParts = endTimeString.split(":");
   end.setHours(parseInt(endParts[0]), parseInt(endParts[1]), 0, 0);
 
   let pickupTime = new Date();
@@ -575,12 +592,15 @@ function submitOrder() {
     document.getElementById("loading-message").style.display = "block";
    // ... 將訂單資料和 pickupTime 發送到 Google Apps Scri
   const phoneInput = document.getElementById("phone-last-three").value.trim();
+  let isPhoneValid = true; // 預設手機號碼有效
   if (phoneInput.length < 3) {
     alert("請輸入有效的手機號碼末三碼！");
-     // 將焦點設定到手機末三碼輸入框
-     document.getElementById("phone-last-three").focus();
-    return;
-  }
+    document.getElementById("loading-overlay").style.display = "none";
+      document.getElementById("loading-message").style.display = "none";
+    document.getElementById("phone-last-three").focus();
+   return;
+  };
+  
   const phoneLastThree = phoneInput.slice(-3);
   const time = document.getElementById("selected-time").value || new Date().toLocaleTimeString("zh-TW", { hour: '2-digit', minute: '2-digit' });
   const totalAmount = document.getElementById('total-amount').textContent;
@@ -649,7 +669,7 @@ function submitOrder() {
     return;
   }
 
-  const scriptURL = "https://script.google.com/macros/s/AKfycbxnxO4D4LKqpwYcdLV4efHCBGobdPTR9u0OuA-D8uHmGQZGETLGwoUoZDk93a3VZbfO/exec";
+  const scriptURL = "https://script.google.com/macros/s/AKfycbypYfUfKA6LJI2bS5OUFY6VVixXlecyA6M7OxU4pjyCjBDMlD5JWqXl10NYVntsenFe/exec";
   const params = `?phone=${phoneLastThree}&time=${time}`;
   const fullURL = scriptURL + params + orders.join("");
 
@@ -677,7 +697,11 @@ function submitOrder() {
       document.getElementById("loading-overlay").style.display = "none";
       document.getElementById("loading-message").style.display = "none";
     });
-}
+  
+         
+  }
+
+
 
 function clearTable() {
   document.querySelectorAll('.order-input').forEach(input => input.value = 0);
