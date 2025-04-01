@@ -490,38 +490,33 @@ function validateQuantity(xiaolongbaoQuantity, availableCapacity) {
     return xiaolongbaoQuantity;
 }
 async function getCapacityInfo() {
-   // 顯示訊息和覆蓋層
-   document.getElementById("loading-message").style.display = "block";
-    document.getElementById("overlay").style.display = "block";
+  // 顯示訊息和覆蓋層
+  document.getElementById("loading-message").style.display = "block";
+  document.getElementById("overlay").style.display = "block";
   try {
-    const response = await fetch("https://script.google.com/macros/s/AKfycbx-xNDLXmFOQST0Z558EnXEgB29ds8lSilpS5bpKGBwMJ1LuXSPP7-jNcoHujGrZhtf/exec");
+    const response = await fetch("https://script.google.com/macros/s/AKfycbzBdfHdUnyHyxPmaW-sUymTuvfBqLgRaZ9Qq3obJTBT3neufPYJZNXKazx3j6wkLXQP/exec");
     const data = await response.json();
 
     if (data && data.result === "success" && data.info) {
       if (document.getElementById("available-capacity")) {
-         document.getElementById("available-capacity").textContent = data.info.availableCapacity;
+        document.getElementById("available-capacity").textContent = data.info.availableCapacity;
       }
       if (document.getElementById("pending-orders")) {
-       document.getElementById("pending-orders").textContent = data.info.pendingOrders;
-    }
+        document.getElementById("pending-orders").textContent = data.info.pendingOrders;
+      }
       // 獲取上班和下班時間
       globalStartTime = new Date(data.info.startTime);
       globalEndTime = new Date(data.info.endTime);
-
-      
-      // 在前端使用時間資料
-      
-
     } else {
       console.error("無法獲取容量資訊：", data ? data.message : "未知錯誤");
     }
   } catch (error) {
     console.error("獲取容量資訊時發生錯誤：", error);
-  }   finally {
-        // 隱藏訊息和覆蓋層
-        document.getElementById("loading-message").style.display = "none";
-        document.getElementById("overlay").style.display = "none";
-    }
+  } finally {
+    // 隱藏訊息和覆蓋層
+    document.getElementById("loading-message").style.display = "none";
+    document.getElementById("overlay").style.display = "none";
+  }
 }
 
 //window.onload = getCapacityInfo;
@@ -692,7 +687,7 @@ if (amount === 0) {
  // 將飲料和備註資料添加到第一個訂單中
  orders[0] += `&sweetSoyMilkHot=${drinks.sweetSoyMilkHot}&sweetSoyMilkCold=${drinks.sweetSoyMilkCold}&unsweetSoyMilkHot=${drinks.unsweetSoyMilkHot}&unsweetSoyMilkCold=${drinks.unsweetSoyMilkCold}&riceMilkHot=${drinks.riceMilkHot}&riceMilkCold=${drinks.riceMilkCold}&barleySoupHot=${drinks.barleySoupHot}&barleySoupCold=${drinks.barleySoupCold}&totalAmount=${totalAmount}&remarks=${encodeURIComponent(remarks)}`;
  console.log(orders);
-  const scriptURL = "https://script.google.com/macros/s/AKfycbx-xNDLXmFOQST0Z558EnXEgB29ds8lSilpS5bpKGBwMJ1LuXSPP7-jNcoHujGrZhtf/exec";
+  const scriptURL = "https://script.google.com/macros/s/AKfycbzBdfHdUnyHyxPmaW-sUymTuvfBqLgRaZ9Qq3obJTBT3neufPYJZNXKazx3j6wkLXQP/exec";
   const params = `?phone=${phoneLastThree}&time=${time}`;
   const fullURL = scriptURL + params + orders.join("");
 
@@ -739,10 +734,11 @@ function resetOrderForm() {
   document.querySelectorAll('.drink-input').forEach(input => input.value = 0);
   document.querySelectorAll('.scallion, .ginger, .soy-sauce, .chili-oil').forEach(checkbox => checkbox.checked = false);
   
-  //document.getElementById("phone-last-three").value = "";
+  document.getElementById("phone-last-three").value = "";
 
   // ... (清除資料的程式碼) ...
   calculateTotal();
+  getCapacityInfo(); // 呼叫原本的 getCapacityInfo() 函式
   // 修改按鈕文字和移除 onclick 事件
   document.getElementById("selected-time").value = "";
   const submitButton = document.getElementById("submit-button");
